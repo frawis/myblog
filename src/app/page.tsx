@@ -3,12 +3,45 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export default function Home() {
+import { IndexPageLayout } from '~/components/layout';
+import { HomePagePreview } from '~/components/previews/index-page-preview';
+
+import { PreviewSuspense } from '~/components/previews/preview-suspense';
+import { PreviewWrapper } from '~/components/previews/preview-wrapper';
+import { getHomePage } from '~/sanity/lib/sanity.client';
+import { getPreviewToken } from '~/sanity/lib/sanity.server.preview';
+import { notFound } from 'next/navigation';
+
+export default async function Home() {
+  const token = getPreviewToken();
+
+  const data = (await getHomePage({ token })) || {
+    title: '',
+    overview: [],
+    showcaseProjects: [],
+  };
+
+  if (!data && !token) {
+    notFound();
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="font-bold animate-pulse text-7xl text-clip px-6 py-1 bg-gradient-to-r rounded-lg from-rose-400/60 via-pink-700/90 to-cyan-400/60">
-        Coming soon...
-      </div>
-    </main>
+    <>
+      {token ? (
+        <>
+          <PreviewSuspense
+            fallback={
+              <PreviewWrapper>
+                <IndexPageLayout data={data} />
+              </PreviewWrapper>
+            }
+          >
+            <HomePagePreview token={token} />
+          </PreviewSuspense>
+        </>
+      ) : (
+        <IndexPageLayout data={data} />
+      )}
+    </>
   );
 }
